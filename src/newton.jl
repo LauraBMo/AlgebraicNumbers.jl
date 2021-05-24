@@ -4,7 +4,8 @@
 # by Bostan, Flajolet, Salvy, and Schost
 
 # derivative of polynomial
-derivative(c::Vector) = c[2:end] .* (1:length(c) - 1)
+degree(v::Vector) = length(v) - 1
+derivative(c::Vector) = c[2:end] .* (1:degree(c))
 
 function polyinv(coeffs::Vector, n)
 	R, x = Nemo.PowerSeriesRing(Nemo.FlintQQ, n, "x")
@@ -20,7 +21,7 @@ function to_newton(coeffs::Vector{BigInt}, n, R, x)
 	# first, make monic.
 	coeffs = coeffs // coeffs[end]
 
-	d = length(coeffs) - 1
+	d = degree(coeffs)
 	a_cfs = reverse(derivative(coeffs))
 	b_cfs = reverse(coeffs)
 
@@ -73,7 +74,7 @@ end
 # composed product of two polynomials, given as coeffs p and q
 function composed_product(p::Vector{BigInt}, q::Vector{BigInt})
 	# compute newton series
-	n = (length(p) - 1) * (length(q) - 1) + 1
+	n = degree(p) * degree(q) + 1
 	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
 	a = to_newton(p, n, R, x)
 	b = to_newton(q, n, R, x)
@@ -88,7 +89,7 @@ end
 # composed sum of two polynomials, given as coeffs p and q
 function composed_sum(p::Vector{BigInt}, q::Vector{BigInt})
 	# compute newton series
-	n = (length(p) - 1) * (length(q) - 1) + 1
+	n = degree(p) * degree(q) + 1
 	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
 	a = to_newton(p, n, R, x)
 	b = to_newton(q, n, R, x)
