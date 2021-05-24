@@ -3,7 +3,6 @@
 # And also arithmetic on algebraic numbers,
 # including +, -, *, /, and radicals.
 
-import PolynomialRoots
 
 import Base.zero,Base.one
 import Base.+,Base.-,Base.*,Base./,Base.inv
