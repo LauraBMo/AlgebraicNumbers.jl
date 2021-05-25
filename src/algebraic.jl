@@ -100,9 +100,9 @@ function AlgebraicNumber(x::Complex{Rational{T}}, ::Type{F}=BigFloat) where {T <
 	end
 end
 
-function poly_from_coeff(a)
+function poly_product_from_coeff(coeffs1, coeffs2)
 	R, x = PolynomialRing(Nemo.FlintZZ, "x")
-	sum([a[i] * x^(i - 1) for i = 1:length(a)])
+	return get_coeffs(R(coeffs1) * R(coeffs2), promote_type(eltype(coeffs1), eltype(coeffs2)))
 end
 
 Base.hash(an::AlgebraicNumber, h::UInt) = hash((an.coeff, an.apprx), h)
@@ -197,8 +197,7 @@ function pow2(an::AlgebraicNumber)
 		pp_cfs = cfs
 	else
 		cfs2 = [iseven(i) ? -cfs[i] : cfs[i] for i = 1:length(cfs)]
-		pp = poly_from_coeff(cfs) * poly_from_coeff(cfs2)
-		pp_cfs = get_coeffs(pp)
+		pp_cfs = poly_product_from_coeff(cfs, cfs2)
 	end
 	p2 = pp_cfs[1:2:end]
 	return AlgebraicNumber(p2, an.apprx * an.apprx, floattype(an))
