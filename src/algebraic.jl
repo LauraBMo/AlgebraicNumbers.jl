@@ -34,10 +34,10 @@ end
 # algebraic number from just poly and approximation.
 # computes precision and simplifies as well.
 function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T <: Integer,S <: Number,F <: AbstractFloat}
-	minpoly = get_minpoly(coeff, num)
+	minpoly, mindist, roots = get_minpoly(coeff, num)
 	apprx = Complex{F}(num)
-	# multiply by 0.5 safety factor
-	prec = convert(F, 0.5 * min_pairwise_dist(prec_roots(minpoly)))
+	# multiply by 0.5 safety factor (the maximal factor is 1/3, bigger factors do not guarantee ==)
+	prec = convert(F, 0.5 * min_pairwise_dist(roots))
 	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
 end
 end
@@ -119,32 +119,28 @@ end
 
 # compute distances
 distances(x::Number, v::Vector) = abs.(x .- v)
+distances(x::Number) = v -> distances(x, v)
 
 # v of length at least 2
 distances(v::Vector, n::Int=length(v)) =
 	reduce(vcat, [distances(v[i], v[(i + 1):end]) for i in 1:(n - 1)])
 
 # simplify an algebraic number by reducing p to the minimal polynomial.
-function get_minpoly(poly, num)
-	# for all factors of an.p, find the one that matches our roots
-	minpoly = poly
-	# Unless nonlinear polynomial, then already irreducible.
-	if length(poly) > 2 # polynomial not linear: factor out
+function get_minpoly(poly::Vector, num)
+	if degree(poly) == 1 # polynomial linear
+		minpoly = poly
+		roots = prec_roots(poly)
+		mindist = minimum(distances(num, roots))
+	else
 		R, x = PolynomialRing(Nemo.FlintZZ, "x")
-		factorisation = collect(Nemo.factor(R(poly)))
-		# first, trivial case (one factor)
-		if length(factorisation) == 1
-			factor = factorisation[1]
-		else
-			# case where more than one factor exists
-			mindists = [minimum(distances(num, roots))
-						for roots in prec_roots.(first.(factorisation))]
-			(mindist, i) = findmin(mindists)
-			factor = factorisation[i]
-		end
-		minpoly = get_coeffs(first(factor))
+		factors = first.(Nemo.factor(R(poly)))
+		factors_roots = prec_roots.(factors)
+		# for all factors of an.p, find the one that matches our roots
+		(mindist, i) = findmin(minimum.(distances(num).(factors_roots)))
+		minpoly = get_coeffs(factors[i])
+		roots = factors_roots[i]
 	end
-	return minpoly
+    return minpoly, mindist, roots
 end
 
 moniccoeffs(an::AlgebraicNumber) = an.coeff[begin:(end - 1)] .// an.coeff[end]
