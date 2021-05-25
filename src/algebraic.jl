@@ -116,8 +116,8 @@ function show(io::IO, an::AlgebraicNumber)
 end
 
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
-get_coeffs(p::Nemo.fmpz_poly, ::Type{T <: Integer}=BigInt)  = T.([Nemo.coeff(p, i) for i in 0:Nemo.degree(p)])
-prec_roots(a::Vector{T}) where {T <: Integer} = unique(PolynomialRoots.roots(BigFloat.(a)))
+get_coeffs(p::Nemo.fmpz_poly, ::Type{T}=BigInt) where {T <: Integer}  = T.([Nemo.coeff(p, i) for i in 0:Nemo.degree(p)])
+prec_roots(a::Vector) = unique(PolynomialRoots.roots(BigFloat.(a)))
 prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
 
@@ -210,7 +210,7 @@ end
 function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	if an1 == 0 || an2 == 0
 		# TODO: don't handle this explicitly
-		return zero(AlgebraicNumber)
+		return zero(promote_type(typeof(an1), typeof(an2)))
 	end
 	# check if p==q, if then use a more optimized and correct routine
 	# if an1.coeff == an2.coeff
@@ -238,8 +238,13 @@ end
 conj(an::AlgebraicNumber) = AlgebraicNumber(an.coeff, conj(an.apprx), an.prec)
 abs(an::AlgebraicNumber) = sqrt(an * conj(an))
 
-zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T[0, 1], Complex{F}(0.0), F(Inf))
-one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T[-1,1], Complex{F}(1.0), F(Inf))
+# zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber{T,F}(T[0, 1], Complex{F}(0.0), F(Inf))
+zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T(0), F)
+zero(::Type{AlgebraicNumber}) = zero(AlgebraicNumber{BigInt,BigFloat})
+zero(x::AlgebraicNumber) = zero(typeof(x))
+one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T(1), F)
+one(::Type{AlgebraicNumber}) = one(AlgebraicNumber{BigInt,BigFloat})
+one(x::AlgebraicNumber) = one(typeof(x))
 
 real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2), floattype(an)))
 imag(an::AlgebraicNumber{T,F}) where {T,F} = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * im))
@@ -254,7 +259,7 @@ confirm_algnumber(b) = sum(b.coeff .* [b.apprx^(i - 1) for i = 1:length(b.coeff)
 
 # compute exp(pi*i*a),
 # which is algebraic if a is rational.
-function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: BigFloat}
+function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat}
 	# first, obtain polynomial
 	p = interleavezeros(T[-1,1], 2 * denominator(a) - 1)
 	# now, select root.
@@ -263,5 +268,5 @@ function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: Bi
 	return AlgebraicNumber(p, apprx, F)
 end
 
-cos_alg(a::Rational) = real(exp_alg(a))
-sin_alg(a::Rational) = imag(exp_alg(a))
+cos_alg(a::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} = real(exp_alg(a, F), F)
+sin_alg(a::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} = imag(exp_alg(a, F), F)
