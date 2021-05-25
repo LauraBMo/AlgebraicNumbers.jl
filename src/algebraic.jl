@@ -25,18 +25,20 @@ end
 
 # algebraic number from just poly and approximation.
 # computes precision and simplifies as well.
-function AlgebraicNumber(coeff::Vector{T}, apprx::Complex{F}) where {T <: Integer,F <: AbstractFloat}
-	an = AlgebraicNumber{T,F}(coeff, apprx, calc_precision(coeff, apprx))
-	return simplify(an)
+function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T <: Integer,S <: Number,F <: AbstractFloat}
+	minpoly = get_minpoly(coeff, num)
+	apprx = Complex{F}(num)
+	# multiply by 0.5 safety factor
+	prec = convert(F, 0.5 * min_pairwise_dist(prec_roots(minpoly)))
+	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
+end
 end
 
 # AlgebraicNumber from any integer type
-AlgebraicNumber(x::T) where {T <: Integer} =
-    AlgebraicNumber(BigInt[-x,one(T)], Complex{BigFloat}(x))
+AlgebraicNumber(x::T) where {T <: Integer} = AlgebraicNumber(BigInt[-x,one(T)], x)
 
 # AlgebraicNumber from rationails
-AlgebraicNumber(x::Rational) =
-    AlgebraicNumber(BigInt[-numerator(x), denominator(x)], Complex{BigFloat}(x))
+AlgebraicNumber(x::Rational) = AlgebraicNumber(BigInt[-numerator(x), denominator(x)], x)
 
 function poly_from_coeff(a)
 	R, x = PolynomialRing(Nemo.FlintZZ, "x")
@@ -56,72 +58,50 @@ end
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
 get_coeffs(p::Nemo.fmpz_poly) = [BigInt(Nemo.coeff(p, i)) for i = 0:Nemo.degree(p)]
 prec_roots(a::Vector{T}) where {T <: Integer} = PolynomialRoots.roots(convert(Array{BigFloat}, a))
+prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
 
 # Given an algebraic number, find minimum precision required
 # to specify it among roots of an.p
 # TODO: handle case of repeated roots precisely
-function calc_precision(coeff::Vector{T}, apprx::Complex{F}) where {T <: Integer,F <: AbstractFloat}
-	# compute smallest distance between all pairs of elements in x
-	function min_pairwise_dist(x)
-		biginf = convert(F, Inf)
-		n = length(x)
-		if n <= 1
-			return Inf
-		else
-			pdists = [i < j ? abs(x[i] - x[j]) : biginf for i = 1:n,j = 1:n]
-			return minimum(pdists)
-		end
+function min_pairwise_dist(v::Vector)
+	mindist = Inf
+	# nontrivial case
+	if length(v) > 1
+		# find minimum pairwise distance between pairs;
+		mindist = minimum(distances(v))
 	end
-
-	# first, find all roots of p
-	rts = prec_roots(coeff)
-
-	# first, trivial case
-	if length(rts) == 1
-		return convert(F, Inf)
-	end
-
-	# find minimum pairwise distance between roots;
-	# multiply by 0.5 safety factor
-	return 0.5 * min_pairwise_dist(convert(Vector{Complex{F}}, rts))
+	return mindist
 end
 
+# compute distances
+distances(x::Number, v::Vector) = abs.(x .- v)
+
+# v of length at least 2
+distances(v::Vector, n::Int=length(v)) =
+	reduce(vcat, [distances(v[i], v[(i + 1):end]) for i in 1:(n - 1)])
 
 # simplify an algebraic number by reducing p to the minimal polynomial.
-# This assumes that calc_precision! has already been called.
-function simplify(an::AlgebraicNumber)
+function get_minpoly(poly, num)
 	# for all factors of an.p, find the one that matches our roots
-
-	# If linear polynomial, then already irreducible.
-	if length(an.coeff) <= 2
-		return an
-	end
-
-	# Otherwise, factor out.
-	R, x = PolynomialRing(Nemo.FlintZZ, "x")
-	p = R(map(Nemo.FlintZZ, an.coeff))
-	fctr_dict = Nemo.factor(p)
-	# fctrs = keys(fctr_dict)
-	fctrs = [p for (p, e) in fctr_dict]
-
-	# first, trivial case
-	if length(fctrs) == 1
-		# irreducible case
-		if first(values(fctr_dict)) == 1
-			return AlgebraicNumber(get_coeffs(first(fctrs)), an.apprx, an.prec)
+	minpoly = poly
+	# Unless nonlinear polynomial, then already irreducible.
+	if length(poly) > 2 # polynomial not linear: factor out
+		R, x = PolynomialRing(Nemo.FlintZZ, "x")
+		factorisation = collect(Nemo.factor(R(poly)))
+		# first, trivial case (one factor)
+		if length(factorisation) == 1
+			factor = factorisation[1]
+		else
+			# case where more than one factor exists
+			mindists = [minimum(distances(num, roots))
+						for roots in prec_roots.(first.(factorisation))]
+			(mindist, i) = findmin(mindists)
+			factor = factorisation[i]
 		end
-		# reducible case
-		coeffs1 = get_coeffs(first(fctrs))
-		apprx1  = an.apprx
-		return AlgebraicNumber(coeffs1, apprx1, calc_precision(coeffs1, apprx1))
+		minpoly = get_coeffs(first(factor))
 	end
-	# case where more than one factor exists
-	mindists = [minimum(abs.(an.apprx .- prec_roots(get_coeffs(fctr)))) for fctr in fctrs]
-	(newprec, i) = findmin(mindists)
-	fctr = collect(fctrs)[i]
-	an = AlgebraicNumber(get_coeffs(fctr), an.apprx, newprec)
-	return an
+	return minpoly
 end
 
 function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
