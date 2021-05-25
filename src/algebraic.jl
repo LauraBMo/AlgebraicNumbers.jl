@@ -116,8 +116,8 @@ function show(io::IO, an::AlgebraicNumber)
 end
 
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
-prec_roots(a::Vector{T}) where {T <: Integer} = PolynomialRoots.roots(BigFloat.(a))
 get_coeffs(p::Nemo.fmpz_poly, ::Type{T <: Integer}=BigInt)  = T.([Nemo.coeff(p, i) for i in 0:Nemo.degree(p)])
+prec_roots(a::Vector{T}) where {T <: Integer} = unique(PolynomialRoots.roots(BigFloat.(a)))
 prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
 
