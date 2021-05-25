@@ -17,7 +17,7 @@ end
 # compute newton power series of polynomial given with coefficients coeff,
 # in base field R,x.
 # See fig.1 in reference
-function poly_to_newton(coeffs::Vector{BigInt}, n, R, x)
+function poly_to_newton(coeffs::Vector{T}, n, R, x) where {T <: Integer}
 	# first, make monic.
 	coeffs = coeffs // coeffs[end]
 

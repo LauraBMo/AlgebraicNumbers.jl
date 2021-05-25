@@ -9,6 +9,7 @@ import Base.+,Base.-,Base.*,Base./,Base.inv
 import Base.abs,Base.conj
 import Base.real,Base.imag
 import Base.==,Base.hash,Base.show
+import Base.sqrt,Base.cbrt
 
 # see: http://nemocas.org/nemo-0.4.pdf
 
@@ -30,6 +31,9 @@ struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
 	apprx::Complex{F}
 	prec::F
 end
+
+floattype(an::AlgebraicNumber) = typeof(an.prec)
+inttype(an::AlgebraicNumber) = eltype(an.coeff)
 
 # algebraic number from just poly and approximation.
 # computes precision and simplifies as well.
@@ -58,25 +62,27 @@ iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeff, an.apprx, an.prec)
 
 Algebraic number from integer.
 """
-AlgebraicNumber(x::T) where {T <: Integer} = AlgebraicNumber(BigInt[-x,one(T)], x)
+AlgebraicNumber(x::T, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} =
+	AlgebraicNumber([-x,one(x)], x, F)
 
 """
 	 AlgebraicNumber(x::T) where {T <: Rational}
 
 Algebraic number from rational.
 """
-AlgebraicNumber(x::Rational) = AlgebraicNumber(BigInt[-numerator(x), denominator(x)], x)
+AlgebraicNumber(x::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} =
+	AlgebraicNumber([-numerator(x), denominator(x)], x, F)
 
 """
 	 AlgebraicNumber(x::Complex{T}) where T <: Integer
 
 Algebraic number from ZZ[im].
 """
-function AlgebraicNumber(x::Complex{T}) where T <: Integer
+function AlgebraicNumber(x::Complex{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat}
 	if imag(x) == 0
-		return AlgebraicNumber(real(x))
+		return AlgebraicNumber(real(x), F)
 	else
-		return AlgebraicNumber(BigInt[imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x)
+		return AlgebraicNumber([imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x, F)
 	end
 end
 
@@ -85,12 +91,12 @@ end
 
 Algebraic number from QQ[im].
 """
-function AlgebraicNumber(x::Complex{Rational})
+function AlgebraicNumber(x::Complex{Rational{T}}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat}
 	if imag(x) == 0
-		return AlgebraicNumber(real(x))
+		return AlgebraicNumber(real(x), F)
 	else
 		v = [imag(x)^2 + real(x)^2,-2 * real(x),one(T)]
-		return AlgebraicNumber(BigInt.(lcm(denominator.(v)) .* v), x)
+		return AlgebraicNumber(T.(lcm(denominator.(v)) .* v), x)
 	end
 end
 
@@ -110,8 +116,8 @@ function show(io::IO, an::AlgebraicNumber)
 end
 
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
-get_coeffs(p::Nemo.fmpz_poly) = [BigInt(Nemo.coeff(p, i)) for i = 0:Nemo.degree(p)]
-prec_roots(a::Vector{T}) where {T <: Integer} = PolynomialRoots.roots(convert(Array{BigFloat}, a))
+prec_roots(a::Vector{T}) where {T <: Integer} = PolynomialRoots.roots(BigFloat.(a))
+get_coeffs(p::Nemo.fmpz_poly, ::Type{T <: Integer}=BigInt)  = T.([Nemo.coeff(p, i) for i in 0:Nemo.degree(p)])
 prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
 
@@ -148,7 +154,7 @@ function get_minpoly(poly::Vector, num)
 		factors_roots = prec_roots.(factors)
 		# for all factors of an.p, find the one that matches our roots
 		(mindist, i) = findmin(minimum.(distances(num).(factors_roots)))
-		minpoly = get_coeffs(factors[i])
+		minpoly = get_coeffs(factors[i], eltype(poly))
 		roots = factors_roots[i]
 	end
     return minpoly, mindist, roots
@@ -161,11 +167,11 @@ function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	return abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
 end
 
-inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx))
+inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx), floattype(an))
 
 # interleave each elemnet of a with n zeros
 interleavezeros(a,n) =  vec(vcat(a', zeros(eltype(a), n, length(a))))
-function root(an::AlgebraicNumber, n::Int64)
+function root(an::AlgebraicNumber, n::Int)
 	if n == 0
 		throw(ArgumentError("n must be nonzero"))
 	end
@@ -177,11 +183,9 @@ function root(an::AlgebraicNumber, n::Int64)
 		n = -n
 	end
 	# TODO: quickly calculate precision
-	return AlgebraicNumber(interleavezeros(an.coeff, n - 1), an.apprx^(1 / n))
+	return AlgebraicNumber(interleavezeros(an.coeff, n - 1), an.apprx^(1 / n), floattype(an))
 end
 
-import Base.sqrt
-import Base.cbrt
 sqrt(an::AlgebraicNumber) = root(an, 2)
 cbrt(an::AlgebraicNumber) = root(an, 3)
 
@@ -197,13 +201,8 @@ function pow2(an::AlgebraicNumber)
 		pp_cfs = get_coeffs(pp)
 	end
 	p2 = pp_cfs[1:2:end]
-	return AlgebraicNumber(p2, an.apprx * an.apprx)
+	return AlgebraicNumber(p2, an.apprx * an.apprx, floattype(an))
 end
-
-
-# partially simplify a polynomial b
-# eliminating repeated factors
-reduce_repeated_factors(p::Nemo.fmpz_poly) = prod(keys(Nemo.factor(p)))
 
 # multiplication
 function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
@@ -216,12 +215,12 @@ function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	#	return
 	# end
 	p = composed_product(an1.coeff, an2.coeff)
-	return AlgebraicNumber(p, an1.apprx * an2.apprx)
+	return AlgebraicNumber(p, an1.apprx * an2.apprx, floattype(an))
 end
 
 function +(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	p = composed_sum(an1.coeff, an2.coeff)
-	return AlgebraicNumber(p, an1.apprx + an2.apprx)
+	return AlgebraicNumber(p, an1.apprx + an2.apprx, floattype(an))
 end
 
 function -(an1::AlgebraicNumber)
@@ -239,11 +238,11 @@ end
 conj(an::AlgebraicNumber) = AlgebraicNumber(an.coeff, conj(an.apprx), an.prec)
 abs(an::AlgebraicNumber) = sqrt(an * conj(an))
 
-zero(::Type{AlgebraicNumber}) = AlgebraicNumber(BigInt[0, 1], Complex{BigFloat}(0.0), BigFloat(1.0))
-one(::Type{AlgebraicNumber})  = AlgebraicNumber(BigInt[-1,1], Complex{BigFloat}(1.0), BigFloat(1.0))
+zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T[0, 1], Complex{F}(0.0), F(Inf))
+one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T[-1,1], Complex{F}(1.0), F(Inf))
 
-real(an::AlgebraicNumber) = (an + conj(an)) * AlgebraicNumber(BigInt[1,-2], BigFloat(0.5) + 0im, BigFloat(0.5))
-imag(an::AlgebraicNumber) = (an - conj(an)) * AlgebraicNumber(BigInt[1,0,4], BigFloat(-0.5) * im, BigFloat(0.5))
+real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2), floattype(an)))
+imag(an::AlgebraicNumber{T,F}) where {T,F} = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * im))
 
 # take roots of a polynomial,
 # and return them as algebraic numbers
@@ -255,13 +254,13 @@ confirm_algnumber(b) = sum(b.coeff .* [b.apprx^(i - 1) for i = 1:length(b.coeff)
 
 # compute exp(pi*i*a),
 # which is algebraic if a is rational.
-function exp_alg(a::Rational)
+function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: BigFloat}
 	# first, obtain polynomial
-	p = interleavezeros(BigInt[-1,1], 2 * denominator(a) - 1)
+	p = interleavezeros(T[-1,1], 2 * denominator(a) - 1)
 	# now, select root.
-	apprx = exp(im * BigFloat(pi) * a)
+	apprx = exp(im * F(pi) * a)
 	# Finally, return minimal polynomial w.r.t. that root
-	return AlgebraicNumber(p, apprx)
+	return AlgebraicNumber(p, apprx, F)
 end
 
 cos_alg(a::Rational) = real(exp_alg(a))
