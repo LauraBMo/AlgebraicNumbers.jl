@@ -190,6 +190,8 @@ end
 sqrt(an::AlgebraicNumber) = root(an, 2)
 cbrt(an::AlgebraicNumber) = root(an, 3)
 
+minus_minpoly(coeff::Vector) =  [isodd(i) ? -coeff[i] : coeff[i] for i = 1:length(coeff)]
+
 # TODO: special, more efficient cases for ^2 and ^3
 function pow2(an::AlgebraicNumber)
 	cfs = an.coeff
@@ -197,7 +199,7 @@ function pow2(an::AlgebraicNumber)
 	if all(cfs[2:2:end] .== 0)
 		pp_cfs = cfs
 	else
-		cfs2 = [iseven(i) ? -cfs[i] : cfs[i] for i = 1:length(cfs)]
+		cfs2 = (-1) * minus_minpoly(cfs)
 		pp_cfs = poly_product_from_coeff(cfs, cfs2)
 	end
 	p2 = pp_cfs[1:2:end]
@@ -223,12 +225,10 @@ function +(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	return AlgebraicNumber(p, an1.apprx + an2.apprx, floattype(an))
 end
 
-function -(an1::AlgebraicNumber)
-	cfs = copy(an1.coeff)
-	for i = 1:2:length(cfs)
-		cfs[i] = -cfs[i]
-	end
-	return AlgebraicNumber(cfs, -an1.apprx, an1.prec)
+function -(an::AlgebraicNumber)
+	newcoeff = minus_minpoly(an.coeff)
+	newnum = -an.apprx
+	return AlgebraicNumber{inttype(an),floattype(an)}(newcoeff, newnum, an.prec)
 end
 
 -(an1::AlgebraicNumber,an2::AlgebraicNumber) = an1 + (-an2)
