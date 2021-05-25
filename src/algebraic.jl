@@ -157,7 +157,7 @@ end
 inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx))
 
 # interleave each elemnet of a with n zeros
-interleave(a,n) =  vec(vcat(a', zeros(Int64, n, length(a))))
+interleavezeros(a,n) =  vec(vcat(a', zeros(eltype(a), n, length(a))))
 function root(an::AlgebraicNumber, n::Int64)
 	if n == 0
 		throw(ArgumentError("n must be nonzero"))
@@ -170,7 +170,7 @@ function root(an::AlgebraicNumber, n::Int64)
 		n = -n
 	end
 	# TODO: quickly calculate precision
-	return AlgebraicNumber(interleave(an.coeff, n - 1), an.apprx^(1 / n))
+	return AlgebraicNumber(interleavezeros(an.coeff, n - 1), an.apprx^(1 / n))
 end
 
 import Base.sqrt
@@ -250,7 +250,7 @@ confirm_algnumber(b) = sum(b.coeff .* [b.apprx^(i - 1) for i = 1:length(b.coeff)
 # which is algebraic if a is rational.
 function exp_alg(a::Rational)
 	# first, obtain polynomial
-	p = interleave(BigInt[-1,1], 2 * denominator(a) - 1)
+	p = interleavezeros(BigInt[-1,1], 2 * denominator(a) - 1)
 	# now, select root.
 	apprx = exp(im * BigFloat(pi) * a)
 	# Finally, return minimal polynomial w.r.t. that root
