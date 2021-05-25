@@ -9,15 +9,15 @@ derivative(c::Vector) = c[2:end] .* (1:degree(c))
 
 function polyinv(coeffs::Vector, n)
 	R, x = Nemo.PowerSeriesRing(Nemo.FlintQQ, n, "x")
-	a = R(map(Nemo.FlintQQ, coeffs), length(coeffs), n, 0)
+	a = R(coeffs, length(coeffs), n, 0)
 	ai = inv(a)
-	return Nemo.fmpq[coeff(ai, i) for i = 0:n - 1]
+	return [coeff(ai, i) for i = 0:n - 1]
 end
 
 # compute newton power series of polynomial given with coefficients coeff,
 # in base field R,x.
 # See fig.1 in reference
-function to_newton(coeffs::Vector{BigInt}, n, R, x)
+function poly_to_newton(coeffs::Vector{BigInt}, n, R, x)
 	# first, make monic.
 	coeffs = coeffs // coeffs[end]
 
@@ -26,8 +26,8 @@ function to_newton(coeffs::Vector{BigInt}, n, R, x)
 	b_cfs = reverse(coeffs)
 
 	# initialize power series polynomials
-	a = R(map(Nemo.FlintQQ, a_cfs))
-	b = R(map(Nemo.FlintQQ, b_cfs))
+	a = R(a_cfs)
+	b = R(b_cfs)
 	b0 = R(polyinv(b_cfs, n))
 
 	c  = truncate(a * b0, d)
@@ -36,7 +36,7 @@ function to_newton(coeffs::Vector{BigInt}, n, R, x)
 	x_power = R(1)
 	x_d = x^d
 
-	l = round(Int64, floor(n / d))
+	l = Int(floor(n / d))
 	for j = 0:l
 		r += c * x_power
 		x_power *= x_d
@@ -45,63 +45,66 @@ function to_newton(coeffs::Vector{BigInt}, n, R, x)
 	return r
 end
 
-to_array(p) = Rational{BigInt}[Rational(coeff(p, i)) for i = 0:Nemo.degree(p)]
+# to_array(p) = Rational{BigInt}[Rational(coeff(p, i)) for i = 0:Nemo.degree(p)]
 
 # tr: traces i.e. newton series
 # This algorithm is based on the Leverrier-Faddeev algorithm
 # see: http://math.stackexchange.com/questions/405822/what-is-the-fastest-way-to-find-the-characteristic-polynomial-of-a-matrix
-function from_newton(tr::Vector{T}) where {T <: Number}
+function newton_to_poly(tr::Vector{T}) where {T <: Number}
 	# special case
-	if tr == [1]
-		return T[0,1]
+	out = T[0,1]
+	if tr != [1]
+		n = length(tr)
+		c = Vector{T}(undef, n)
+		c[end] = one(T)
+		for k = 1:n - 1
+			next_c = -sum(tr[2:(k + 1)] .* c[(end - k + 1):end]) // k
+			c[end - k] = next_c
+		end
+		out = c
 	end
-	n = length(tr)
-	c = Array{T}(UndefInitializer(), n)
-	c[end] = one(T)
-	for k = 1:n - 1
-		next_c = -sum(tr[2:(k + 1)] .* c[end - k + 1:end]) / k
-		c[end - k] = next_c
-	end
-	return c
+	return out
 end
 
 # Hadamard (element-wise) product of two polynomials
-function hadm(p, q, R)
+function Hadamard(p, q)
 	n = min(Nemo.degree(p), Nemo.degree(q))
-	R([Nemo.coeff(p, i) * Nemo.coeff(q, i) for i = 0:n])
+	return Rational{BigInt}[Nemo.coeff(p, i) * Nemo.coeff(q, i) for i = 0:n]
 end
 
 # composed product of two polynomials, given as coeffs p and q
-function composed_product(p::Vector{BigInt}, q::Vector{BigInt})
+function composed_product(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	# compute newton series
 	n = degree(p) * degree(q) + 1
 	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
-	a = to_newton(p, n, R, x)
-	b = to_newton(q, n, R, x)
+	a = poly_to_newton(p, n, R, x)
+	b = poly_to_newton(q, n, R, x)
 
 	# multiply newton series and invert
-	pq = from_newton(to_array(hadm(a, b, R)))
+	pq = newton_to_poly(Hadamard(a, b))
 
 	# convert to integer and return
-	return map(numerator, pq * lcm(map(denominator, pq)))
+	return convert_intcoeffs(T, pq)
 end
 
 # composed sum of two polynomials, given as coeffs p and q
-function composed_sum(p::Vector{BigInt}, q::Vector{BigInt})
+function composed_sum(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	# compute newton series
 	n = degree(p) * degree(q) + 1
 	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
-	a = to_newton(p, n, R, x)
-	b = to_newton(q, n, R, x)
+	a = poly_to_newton(p, n, R, x)
+	b = poly_to_newton(q, n, R, x)
 
 	# exp series
 	ee  = R([Nemo.FlintQQ(1 // factorial(BigInt(i))) for i = 0:n])
 	eei = R([Nemo.FlintQQ(factorial(BigInt(i))) for i = 0:n])
 
 	# multiply newton series and invert
-	m = mullow(hadm(a, ee, R), hadm(b, ee, R), n + 1)
-	pq = from_newton(to_array(hadm(m, eei, R)))
+	m = mullow(R(Hadamard(a, ee)), R(Hadamard(b, ee)), n + 1)
+	pq = newton_to_poly(Hadamard(m, eei))
 
 	# convert to integer and return
-	return map(numerator, pq * lcm(map(denominator, pq)))
+	return convert_intcoeffs(T, pq)
 end
+
+convert_intcoeffs(::Type{T}, v) where {T <: Integer} = T.(lcm(denominator.(v)) * v)
