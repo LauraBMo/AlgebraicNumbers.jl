@@ -36,11 +36,22 @@ end
 function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T <: Integer,S <: Number,F <: AbstractFloat}
 	minpoly, mindist, roots = get_minpoly(coeff, num)
 	apprx = Complex{F}(num)
-	# multiply by 0.5 safety factor (the maximal factor is 1/3, bigger factors do not guarantee ==)
-	prec = convert(F, 0.5 * min_pairwise_dist(roots))
+	# multiply by 0.3 safety factor (the maximal factor is 1/3, bigger factors do not guarantee ==)
+	prec = convert(F, 0.3 * min_pairwise_dist(roots))
+	prec < mindist && throw("Error!!! Distance between an.apprx and any root is bigger than an.prec.")
 	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
 end
+
+function iswelldefined(coeff, apprx, prec)
+	roots = prec_roots(coeff)
+	if minimum(distances(apprx, roots)) < prec
+		print("AlgebraicNumber $(an) well defined")
+	else
+		throw("Error!!! apprx is a distance bigger than prec to any root.")
+	end
 end
+
+iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeff, an.apprx, an.prec)
 
 """
 	 AlgebraicNumber(x::T) where {T <: Integer}
