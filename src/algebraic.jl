@@ -255,7 +255,7 @@ function alg_roots(coeff::Vector{Integer})
 	# TODO
 end
 
-confirm_algnumber(b) = sum(b.coeff .* [b.apprx^(i - 1) for i = 1:length(b.coeff)])
+confirm_algnumber(b) = sum(b.coeff .* (b.apprx.^(0:degree(b.coeff))))
 
 # compute exp(pi*i*a),
 # which is algebraic if a is rational.
