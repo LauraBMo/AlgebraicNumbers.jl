@@ -8,7 +8,7 @@ import Base.zero,Base.one
 import Base.+,Base.-,Base.*,Base./,Base.inv
 import Base.abs,Base.conj
 import Base.real,Base.imag
-import Base.==
+import Base.==,Base.hash,Base.show
 
 # see: http://nemocas.org/nemo-0.4.pdf
 
@@ -43,7 +43,8 @@ function poly_from_coeff(a)
 	sum([a[i] * x^(i - 1) for i = 1:length(a)])
 end
 
-import Base.show
+Base.hash(an::AlgebraicNumber, h::UInt) = hash(an.coeff, h)
+
 # TODO: only show up to precision
 function show(io::IO, an::AlgebraicNumber)
 	print(io, "≈")
