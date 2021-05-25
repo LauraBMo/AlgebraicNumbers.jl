@@ -17,6 +17,14 @@ import Base.==,Base.hash,Base.show
 # an arbitrary-precision approximation of the number,
 # and prec which specifies the minimal distance between roots of p
 # TODO: apprx has to be complex.
+"""
+		AlgebraicNumber{T}
+
+An algebraic number consisting of
+   - the minimal polynomial of the number: Vector of integers.
+   - Complex float point aproximation
+   - minimal distance between two roots of minimal polynomial
+"""
 struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
 	coeff::Vector{T}
 	apprx::Complex{F}
@@ -34,11 +42,46 @@ function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T 
 end
 end
 
-# AlgebraicNumber from any integer type
+"""
+	 AlgebraicNumber(x::T) where {T <: Integer}
+
+Algebraic number from integer.
+"""
 AlgebraicNumber(x::T) where {T <: Integer} = AlgebraicNumber(BigInt[-x,one(T)], x)
 
-# AlgebraicNumber from rationails
+"""
+	 AlgebraicNumber(x::T) where {T <: Rational}
+
+Algebraic number from rational.
+"""
 AlgebraicNumber(x::Rational) = AlgebraicNumber(BigInt[-numerator(x), denominator(x)], x)
+
+"""
+	 AlgebraicNumber(x::Complex{T}) where T <: Integer
+
+Algebraic number from ZZ[im].
+"""
+function AlgebraicNumber(x::Complex{T}) where T <: Integer
+	if imag(x) == 0
+		return AlgebraicNumber(real(x))
+	else
+		return AlgebraicNumber(BigInt[imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x)
+	end
+end
+
+"""
+	 AlgebraicNumber(x::Complex{Rational})
+
+Algebraic number from QQ[im].
+"""
+function AlgebraicNumber(x::Complex{Rational})
+	if imag(x) == 0
+		return AlgebraicNumber(real(x))
+	else
+		v = [imag(x)^2 + real(x)^2,-2 * real(x),one(T)]
+		return AlgebraicNumber(BigInt.(lcm(denominator.(v)) .* v), x)
+	end
+end
 
 function poly_from_coeff(a)
 	R, x = PolynomialRing(Nemo.FlintZZ, "x")
