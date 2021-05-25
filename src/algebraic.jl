@@ -99,7 +99,7 @@ function poly_from_coeff(a)
 	sum([a[i] * x^(i - 1) for i = 1:length(a)])
 end
 
-Base.hash(an::AlgebraicNumber, h::UInt) = hash(an.coeff, h)
+Base.hash(an::AlgebraicNumber, h::UInt) = hash((an.coeff, an.apprx), h)
 
 # TODO: only show up to precision
 function show(io::IO, an::AlgebraicNumber)
