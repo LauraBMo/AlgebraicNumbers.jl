@@ -147,13 +147,11 @@ function get_minpoly(poly, num)
 	return minpoly
 end
 
+moniccoeffs(an::AlgebraicNumber) = an.coeff[begin:(end - 1)] .// an.coeff[end]
+
 function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
-	cf1 = an1.coeff
-	cf2 = an2.coeff
-	(cf1 / cf1[end]) == (cf2 / cf2[end]) || return false
-	prec1 = calc_precision(an1.coeff, an1.apprx)
-	prec2 = calc_precision(an2.coeff, an2.apprx)
-	return abs(an1.apprx - an2.apprx) < min(prec1, prec2)
+	moniccoeffs(an1) == moniccoeffs(an2) || return false
+	return abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
 end
 
 inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx))
