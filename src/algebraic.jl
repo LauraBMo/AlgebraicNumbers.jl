@@ -171,16 +171,17 @@ inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx), flo
 
 # interleave each elemnet of a with n zeros
 interleavezeros(a,n) =  vec(vcat(a', zeros(eltype(a), n, length(a))))
+
 function root(an::AlgebraicNumber, n::Int)
 	if n == 0
-		throw(ArgumentError("n must be nonzero"))
+		# Follow julia's convention for: an^(1/0)=an^(infinity)
+		return an.apprx^Inf
 	end
 	if n == 1
 		return an
 	end
 	if n < 0
-		an = inv(an)
-		n = -n
+		return root(inv(a), -n)
 	end
 	# TODO: quickly calculate precision
 	return AlgebraicNumber(interleavezeros(an.coeff, n - 1), an.apprx^(1 / n), floattype(an))
