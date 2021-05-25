@@ -2,20 +2,16 @@
 import Base.convert
 import Base.promote_rule
 
-# Algebraic number from integer
-convert(::Type{T}, x::Number) where {T <: AlgebraicNumber} = AlgebraicNumber(x)
+ExactNumber{T} = Union{T,Rational{T},Complex{T},Complex{Rational{T}}}
 
+# Algebraic number from integer
+convert(::Type{AlgebraicNumber{T,F}}, x::ExactNumber{S}) where {S <: Integer,T,F} =
+	AlgebraicNumber(promote_type(T, typeof(x))(x), F)
 
 # promotions
-promote_rule(::Type{T}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
+promote_rule(::Type{ExactNumber{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
 	AlgebraicNumber{promote_type(T, S),F}
-promote_rule(::Type{Rational{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
-	AlgebraicNumber{promote_type(T, S),F}
-promote_rule(::Type{Complex{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
-	AlgebraicNumber{promote_type(T, S),F}
-promote_rule(::Type{Complex{Rational{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
-	AlgebraicNumber{promote_type(T, S),F}
-premote_rule(::Type{AlgebraicNumber{T,F}},::Type{AlgebraicNumber{S,G}}) where {T,S <: Integer,F,G <: AbstractFloat} =
+premote_rule(::Type{AlgebraicNumber{T,F}}, ::Type{AlgebraicNumber{S,G}}) where {T,S,F,G} =
 	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
 
 isrational(an::AlgebraicNumber) = degree(an.coeff) == 1
