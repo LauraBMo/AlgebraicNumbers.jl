@@ -1,7 +1,7 @@
 module AlgebraicNumbers
 
 using Nemo
-import PolynomialRoots
+import PolynomialRoots:roots
 
 export AlgebraicNumber
 export *,+,-,/,^,root,==,inv
