@@ -32,8 +32,8 @@ struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
 	prec::F
 end
 
-floattype(an::AlgebraicNumber) = typeof(an.prec)
-inttype(an::AlgebraicNumber) = eltype(an.coeff)
+floattype(an::AlgebraicNumber{T,F}) where {T,F} = F
+inttype(an::AlgebraicNumber{T,F}) where {T,F} = T
 
 # algebraic number from just poly and approximation.
 # computes precision and simplifies as well.
