@@ -143,8 +143,8 @@ distances(x::Number) = v -> distances(x, v)
 distance(coeff::Vector{T}, x::Number) where {T <: Integer} = minimum(distances(x, prec_roots(coeff)))
 
 # v of length at least 2
-distances(v::Vector, n::Int=length(v)) =
-	reduce(vcat, [distances(v[i], v[(i + 1):end]) for i in 1:(n - 1)])
+distances(v::Vector) =
+	reduce(vcat, [distances(v[i], v[(i + 1):end]) for i in 1:(length(v) - 1)])
 
 # simplify an algebraic number by reducing p to the minimal polynomial.
 function get_minpoly(poly::Vector, num)
@@ -156,7 +156,7 @@ function get_minpoly(poly::Vector, num)
 		R, x = PolynomialRing(Nemo.FlintZZ, "x")
 		factors = first.(Nemo.factor(R(poly)))
 		factors_roots = prec_roots.(factors)
-		# for all factors of an.p, find the one that matches our roots
+		# for all factors of an.p, find the one that matches our root
 		(mindist, i) = findmin(minimum.(distances(num).(factors_roots)))
 		minpoly = get_coeffs(factors[i], eltype(poly))
 		roots = factors_roots[i]
