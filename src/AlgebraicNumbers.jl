@@ -13,5 +13,7 @@ export pow2
 include("algebraic.jl")
 include("promote.jl")
 include("newton.jl")
+include("Nemo.jl")
+include("Base.jl")
 
 end
