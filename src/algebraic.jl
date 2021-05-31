@@ -35,14 +35,20 @@ end
 floattype(an::AlgebraicNumber{T,F}) where {T,F} = F
 inttype(an::AlgebraicNumber{T,F}) where {T,F} = T
 
-# algebraic number from just poly and approximation.
+# algebraic number from just a polynomial and a number approximating one of its roots.
 # computes precision and simplifies as well.
 function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T <: Integer,S <: Number,F <: AbstractFloat}
 	minpoly, mindist, roots = get_minpoly(coeff, num)
-	apprx = Complex{F}(num)
+	return set_an(F, minpoly, num, roots, mindist)
+end
+
+# TODO check that the new algebraic number is well defined. Use iswelldefined?
+# TODO add certificate that num approximates a root of minpoly, see HomotopyContinuation.jl certificate
+function set_an(::Type{F}, minpoly::Vector{T}, num::S, roots=prec_roots(minpoly)) where {T <: Integer,S <: Number,F <: AbstractFloat}
 	# multiply by 0.3 safety factor (the maximal factor is 1/3, bigger factors do not guarantee ==)
 	prec = convert(F, 0.3 * min_pairwise_dist(roots))
-	prec < mindist && throw("Error!!! Distance between an.apprx and any root is bigger than an.prec.")
+	apprx = Complex{F}(num)
+	iswelldefined(mindist, prec)
 	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
 end
 
@@ -63,7 +69,7 @@ iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeff, an.apprx, an.prec)
 Algebraic number from integer.
 """
 AlgebraicNumber(x::T, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} =
-	AlgebraicNumber([-x,one(x)], x, F)
+	set_an(F, [-x, one(x)], x, [x])
 
 """
 	 AlgebraicNumber(x::T) where {T <: Rational}
@@ -71,7 +77,7 @@ AlgebraicNumber(x::T, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat
 Algebraic number from rational.
 """
 AlgebraicNumber(x::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} =
-	AlgebraicNumber([-numerator(x), denominator(x)], x, F)
+	set_an(F, [-numerator(x), denominator(x)], x, [x])
 
 """
 	 AlgebraicNumber(x::Complex{T}) where T <: Integer
@@ -82,7 +88,7 @@ function AlgebraicNumber(x::Complex{T}, ::Type{F}=BigFloat) where {T <: Integer,
 	if imag(x) == 0
 		return AlgebraicNumber(real(x), F)
 	else
-		return AlgebraicNumber([imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x, F)
+		return set_an(F, [imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x, [x, conj(x)])
 	end
 end
 
@@ -96,7 +102,7 @@ function AlgebraicNumber(x::Complex{Rational{T}}, ::Type{F}=BigFloat) where {T <
 		return AlgebraicNumber(real(x), F)
 	else
 		v = [imag(x)^2 + real(x)^2,-2 * real(x),one(T)]
-		return AlgebraicNumber(T.(lcm(denominator.(v)) .* v), x)
+		return set_an(F, T.(lcm(denominator.(v)) .* v), x, [x, conj(x)])
 	end
 end
 
