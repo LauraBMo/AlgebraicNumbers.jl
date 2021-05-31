@@ -3,10 +3,6 @@
 # "Fast computation of special resultants"
 # by Bostan, Flajolet, Salvy, and Schost
 
-# derivative of polynomial
-degree(v::Vector) = length(v) - 1
-derivative(c::Vector) = c[2:end] .* (1:degree(c))
-
 function polyinv(coeffs::Vector, n)
 	R, x = Nemo.PowerSeriesRing(Nemo.FlintQQ, n, "x")
 	a = R(coeffs, length(coeffs), n, 0)
@@ -19,11 +15,11 @@ end
 # See fig.1 in reference
 function poly_to_newton(coeffs::Vector{T}, n, R, x) where {T <: Integer}
 	# first, make monic.
-	coeffs = coeffs // coeffs[end]
+	moniccoeffs = moniccoeffs(coeffs)
 
-	d = degree(coeffs)
-	a_cfs = reverse(derivative(coeffs))
-	b_cfs = reverse(coeffs)
+	d = degree(moniccoeffs)
+	a_cfs = reverse(derivative(moniccoeffs))
+	b_cfs = reverse(moniccoeffs)
 
 	# initialize power series polynomials
 	a = R(a_cfs)
@@ -68,8 +64,7 @@ end
 
 # Hadamard (element-wise) product of two polynomials
 function Hadamard(p, q)
-	n = min(Nemo.degree(p), Nemo.degree(q))
-	return Rational{BigInt}[Nemo.coeff(p, i) * Nemo.coeff(q, i) for i = 0:n]
+	return Rational{BigInt}[cp * cq for (cp, cq) in zip(Nemo.coeffs(p), Nemo.coeffs(q))]
 end
 
 # composed product of two polynomials, given as coeffs p and q
@@ -96,8 +91,8 @@ function composed_sum(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	b = poly_to_newton(q, n, R, x)
 
 	# exp series
-	ee  = R([Nemo.FlintQQ(1 // factorial(BigInt(i))) for i = 0:n])
-	eei = R([Nemo.FlintQQ(factorial(BigInt(i))) for i = 0:n])
+	ee  = R([1 // factorial(BigInt(i)) for i = 0:n])
+	eei = R([factorial(BigInt(i)) for i = 0:n])
 
 	# multiply newton series and invert
 	m = mullow(R(Hadamard(a, ee)), R(Hadamard(b, ee)), n + 1)
@@ -106,5 +101,3 @@ function composed_sum(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	# convert to integer and return
 	return convert_intcoeffs(T, pq)
 end
-
-convert_intcoeffs(::Type{T}, v) where {T <: Integer} = T.(lcm(denominator.(v)) * v)

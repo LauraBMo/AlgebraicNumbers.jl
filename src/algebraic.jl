@@ -33,6 +33,7 @@ struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
 end
 
 floattype(an::AlgebraicNumber{T,F}) where {T,F} = F
+complextype(an::AlgebraicNumber{T,F}) where {T,F} = Complex{F}
 inttype(an::AlgebraicNumber{T,F}) where {T,F} = T
 
 # algebraic number from just a polynomial and a number approximating one of its roots.
@@ -118,7 +119,7 @@ function show(io::IO, an::AlgebraicNumber)
 end
 
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
-get_coeffs(p::Nemo.fmpz_poly, ::Type{T}=BigInt) where {T <: Integer}  = T.([Nemo.coeff(p, i) for i in 0:Nemo.degree(p)])
+get_coeffs(p::Nemo.fmpz_poly, ::Type{T}=BigInt) where {T <: Integer}  = T.(Nemo.coeffs(p))
 prec_roots(a::Vector) = unique(PolynomialRoots.roots(BigFloat.(a)))
 prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
@@ -164,8 +165,6 @@ function get_minpoly(poly::Vector, num)
     return minpoly, mindist, roots
 end
 
-moniccoeffs(an::AlgebraicNumber) = an.coeff[begin:(end - 1)] .// an.coeff[end]
-
 function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	moniccoeffs(an1) == moniccoeffs(an2) || return false
 	return abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
@@ -193,8 +192,6 @@ end
 
 sqrt(an::AlgebraicNumber) = root(an, 2)
 cbrt(an::AlgebraicNumber) = root(an, 3)
-
-minus_minpoly(coeff::Vector) =  [isodd(i) ? -coeff[i] : coeff[i] for i = 1:length(coeff)]
 
 # TODO: special, more efficient cases for ^2 and ^3
 function pow2(an::AlgebraicNumber)
@@ -243,10 +240,11 @@ conj(an::AlgebraicNumber) = AlgebraicNumber(an.coeff, conj(an.apprx), an.prec)
 abs(an::AlgebraicNumber) = sqrt(an * conj(an))
 
 # zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber{T,F}(T[0, 1], Complex{F}(0.0), F(Inf))
-zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T(0), F)
+zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(zero(T), F)
 zero(::Type{AlgebraicNumber}) = zero(AlgebraicNumber{BigInt,BigFloat})
 zero(x::AlgebraicNumber) = zero(typeof(x))
-one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(T(1), F)
+
+one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(one(T), F)
 one(::Type{AlgebraicNumber}) = one(AlgebraicNumber{BigInt,BigFloat})
 one(x::AlgebraicNumber) = one(typeof(x))
 
