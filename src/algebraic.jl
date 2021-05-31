@@ -52,15 +52,11 @@ function set_an(::Type{F}, minpoly::Vector{T}, num::S, roots=prec_roots(minpoly)
 	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
 end
 
-function iswelldefined(coeff, apprx, prec)
-	roots = prec_roots(coeff)
-	if minimum(distances(apprx, roots)) < prec
-		print("AlgebraicNumber $(an) well defined")
-	else
-		throw("Error!!! apprx is a distance bigger than prec to any root.")
-	end
+function iswelldefined(mindist::Real, prec::Real)
+	mindist < prec || throw("Error!!! apprx is a distance bigger than prec to any root.")
 end
 
+iswelldefined(coeff::Vector{T}, apprx, prec) where {T <: Integer} = iswelldefined(distance(coeff, apprx), prec)
 iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeff, an.apprx, an.prec)
 
 """
@@ -143,6 +139,8 @@ end
 # compute distances
 distances(x::Number, v::Vector) = abs.(x .- v)
 distances(x::Number) = v -> distances(x, v)
+# distance between a polynomial and a number
+distance(coeff::Vector{T}, x::Number) where {T <: Integer} = minimum(distances(x, prec_roots(coeff)))
 
 # v of length at least 2
 distances(v::Vector, n::Int=length(v)) =
