@@ -9,8 +9,8 @@ AlgebraicNumbers.jl
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/AlgebraicNumbers.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/AlgebraicNumbers.jl/dev)
 [![Build Status](https://github.com/LauraBMo/AlgebraicNumbers.jl/workflows/CI/badge.svg)](https://github.com/LauraBMo/AlgebraicNumbers.jl/actions)
-[![Build Status](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl.svg?branch=master)](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl)
-[![Coverage](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl)
+[![Build Status](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl.svg?branch=LBMo-major)](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl)
+[![codecov](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl/branch/LBMo-major/graph/badge.svg?token=G4P533T9AL)](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl)
 
 > This package is a fork of [anj1/AlgebraicNumbers.jl](https://github.com/anj1/AlgebraicNumbers.jl)!
 > I just fixed some bugs and registered it, so it is usable with your favourite Julia version.
