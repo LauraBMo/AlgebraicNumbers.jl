@@ -2,8 +2,8 @@
 
 [[AlgebraicNumbers]]
 path = ".."
-uuid = "8b4810eb-32b2-416d-b3ba-35e0edee20bf"
-version = "0.1.0"
+uuid = "e86d093a-a386-599e-b7c7-df0420c8bcba"
+version = "0.1.4"
 
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
