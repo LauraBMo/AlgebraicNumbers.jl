@@ -3,8 +3,14 @@ AlgebraicNumbers.jl
 
 <!-- [![Build Status](https://travis-ci.org/anj1/AlgebraicNumbers.jl.svg?branch=master)](https://travis-ci.org/anj1/AlgebraicNumbers.jl)
 [![Coverage Status](https://coveralls.io/repos/github/anj1/AlgebraicNumbers.jl/badge.svg?branch=master)](https://coveralls.io/github/anj1/AlgebraicNumbers.jl?branch=master) -->
-[![Build Status](https://github.com/fkastner/AlgebraicNumbers.jl/workflows/CI/badge.svg)](https://github.com/fkastner/AlgebraicNumbers.jl/actions)
-[![Coverage Status](https://coveralls.io/repos/github/fkastner/AlgebraicNumbers.jl/badge.svg?branch=master)](https://coveralls.io/github/fkastner/AlgebraicNumbers.jl?branch=master)
+<!-- [![Build Status](https://github.com/fkastner/AlgebraicNumbers.jl/workflows/CI/badge.svg)](https://github.com/fkastner/AlgebraicNumbers.jl/actions) -->
+<!-- [![Coverage Status](https://coveralls.io/repos/github/fkastner/AlgebraicNumbers.jl/badge.svg?branch=master)](https://coveralls.io/github/fkastner/AlgebraicNumbers.jl?branch=master) -->
+
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://LauraBMo.github.io/AlgebraicNumbers.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://LauraBMo.github.io/AlgebraicNumbers.jl/dev)
+[![Build Status](https://github.com/LauraBMo/AlgebraicNumbers.jl/workflows/CI/badge.svg)](https://github.com/LauraBMo/AlgebraicNumbers.jl/actions)
+[![Build Status](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl.svg?branch=master)](https://travis-ci.com/LauraBMo/AlgebraicNumbers.jl)
+[![Coverage](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/LauraBMo/AlgebraicNumbers.jl)
 
 > This package is a fork of [anj1/AlgebraicNumbers.jl](https://github.com/anj1/AlgebraicNumbers.jl)!
 > I just fixed some bugs and registered it, so it is usable with your favourite Julia version.
