@@ -15,11 +15,11 @@ end
 # See fig.1 in reference
 function poly_to_newton(coeffs::Vector{T}, n, R, x) where {T <: Integer}
 	# first, make monic.
-	moniccoeffs = moniccoeffs(coeffs)
+	mcoeffs = moniccoeffs(coeffs)
 
-	d = degree(moniccoeffs)
-	a_cfs = reverse(derivative(moniccoeffs))
-	b_cfs = reverse(moniccoeffs)
+	d = degree(mcoeffs)
+	a_cfs = reverse(derivative(mcoeffs))
+	b_cfs = reverse(mcoeffs)
 
 	# initialize power series polynomials
 	a = R(a_cfs)

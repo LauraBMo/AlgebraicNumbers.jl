@@ -3,7 +3,6 @@
 # And also arithmetic on algebraic numbers,
 # including +, -, *, /, and radicals.
 
-
 import Base.zero,Base.one
 import Base.+,Base.-,Base.*,Base./,Base.inv
 import Base.abs,Base.conj
@@ -27,7 +26,7 @@ An algebraic number consisting of
    - minimal distance between two roots of minimal polynomial
 """
 struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
-	coeff::Vector{T}
+	coeffs::Vector{T}
 	apprx::Complex{F}
 	prec::F
 end
@@ -40,8 +39,12 @@ inttype(an::AlgebraicNumber{T,F}) where {T,F} = T
 # computes precision and simplifies as well.
 function AlgebraicNumber(coeff::Vector{T}, num::S, ::Type{F}=BigFloat) where {T <: Integer,S <: Number,F <: AbstractFloat}
 	minpoly, mindist, roots = get_minpoly(coeff, num)
-	return set_an(F, minpoly, num, roots, mindist)
+	an = set_an(F, minpoly, num, roots)
+	# iswelldefined(mindist, an.prec)
+	return an
 end
+
+AlgebraicNumber(coeff::Vector{T}, num::Complex{F}) where {T <: Integer,F <: AbstractFloat} = AlgebraicNumber(coeff, num, F)
 
 # TODO check that the new algebraic number is well defined. Use iswelldefined?
 # TODO add certificate that num approximates a root of minpoly, see HomotopyContinuation.jl certificate
@@ -49,16 +52,8 @@ function set_an(::Type{F}, minpoly::Vector{T}, num::S, roots=prec_roots(minpoly)
 	# multiply by 0.3 safety factor (the maximal factor is 1/3, bigger factors do not guarantee ==)
 	prec = convert(F, 0.3 * min_pairwise_dist(roots))
 	apprx = Complex{F}(num)
-	iswelldefined(mindist, prec)
 	return AlgebraicNumber{T,F}(minpoly, apprx, prec)
 end
-
-function iswelldefined(mindist::Real, prec::Real)
-	mindist < prec || throw("Error!!! apprx is a distance bigger than prec to any root.")
-end
-
-iswelldefined(coeff::Vector{T}, apprx, prec) where {T <: Integer} = iswelldefined(distance(coeff, apprx), prec)
-iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeff, an.apprx, an.prec)
 
 """
 	 AlgebraicNumber(x::T) where {T <: Integer}
@@ -85,7 +80,7 @@ function AlgebraicNumber(x::Complex{T}, ::Type{F}=BigFloat) where {T <: Integer,
 	if imag(x) == 0
 		return AlgebraicNumber(real(x), F)
 	else
-		return set_an(F, [imag(x)^2 + real(x)^2,-2 * real(x),one(T)], x, [x, conj(x)])
+		return set_an(F, [imag(x)^2 + real(x)^2, -2 * real(x), one(T)], x, [x, conj(x)])
 	end
 end
 
@@ -98,17 +93,12 @@ function AlgebraicNumber(x::Complex{Rational{T}}, ::Type{F}=BigFloat) where {T <
 	if imag(x) == 0
 		return AlgebraicNumber(real(x), F)
 	else
-		v = [imag(x)^2 + real(x)^2,-2 * real(x),one(T)]
-		return set_an(F, T.(lcm(denominator.(v)) .* v), x, [x, conj(x)])
+		rat_coeffs = [imag(x)^2 + real(x)^2, -2 * real(x), one(T)]
+		return set_an(F, convert_intcoeffs(T, rat_coeffs), x, [x, conj(x)])
 	end
 end
 
-function poly_product_from_coeff(coeffs1, coeffs2)
-	R, x = PolynomialRing(Nemo.FlintZZ, "x")
-	return get_coeffs(R(coeffs1) * R(coeffs2), promote_type(eltype(coeffs1), eltype(coeffs2)))
-end
-
-Base.hash(an::AlgebraicNumber, h::UInt) = hash((an.coeff, an.apprx), h)
+Base.hash(an::AlgebraicNumber, h::UInt) = hash((an.coeffs, an.apprx), h)
 
 # TODO: only show up to precision
 function show(io::IO, an::AlgebraicNumber)
@@ -170,7 +160,7 @@ function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	return abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
 end
 
-inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeff), inv(an.apprx), floattype(an))
+inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeffs), inv(an.apprx))
 
 # interleave each elemnet of a with n zeros
 interleavezeros(a,n) =  vec(vcat(a', zeros(eltype(a), n, length(a))))
@@ -187,7 +177,7 @@ function root(an::AlgebraicNumber, n::Int)
 		return root(inv(a), -n)
 	end
 	# TODO: quickly calculate precision
-	return AlgebraicNumber(interleavezeros(an.coeff, n - 1), an.apprx^(1 / n), floattype(an))
+	return AlgebraicNumber(interleavezeros(an.coeffs, n - 1), an.apprx^(1 / n))
 end
 
 sqrt(an::AlgebraicNumber) = root(an, 2)
@@ -195,7 +185,7 @@ cbrt(an::AlgebraicNumber) = root(an, 3)
 
 # TODO: special, more efficient cases for ^2 and ^3
 function pow2(an::AlgebraicNumber)
-	cfs = an.coeff
+	cfs = an.coeffs
 	# first check if it is already in the form of a square root.
 	if all(cfs[2:2:end] .== 0)
 		pp_cfs = cfs
@@ -204,12 +194,12 @@ function pow2(an::AlgebraicNumber)
 		pp_cfs = poly_product_from_coeff(cfs, cfs2)
 	end
 	p2 = pp_cfs[1:2:end]
-	return AlgebraicNumber(p2, an.apprx * an.apprx, floattype(an))
+	return AlgebraicNumber(p2, an.apprx * an.apprx)
 end
 
 # multiplication
 function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
-	if an1 == 0 || an2 == 0
+	if an1 == zero(an1) || an2 == zero(an2)
 		# TODO: don't handle this explicitly
 		return zero(promote_type(typeof(an1), typeof(an2)))
 	end
@@ -217,17 +207,17 @@ function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
 	# if an1.coeff == an2.coeff
 	#	return
 	# end
-	p = composed_product(an1.coeff, an2.coeff)
-	return AlgebraicNumber(p, an1.apprx * an2.apprx, floattype(an))
+	p = composed_product(an1.coeffs, an2.coeffs)
+	return AlgebraicNumber(p, an1.apprx * an2.apprx)
 end
 
 function +(an1::AlgebraicNumber, an2::AlgebraicNumber)
-	p = composed_sum(an1.coeff, an2.coeff)
-	return AlgebraicNumber(p, an1.apprx + an2.apprx, floattype(an))
+	p = composed_sum(an1.coeffs, an2.coeffs)
+	return AlgebraicNumber(p, an1.apprx + an2.apprx)
 end
 
 function -(an::AlgebraicNumber)
-	newcoeff = minus_minpoly(an.coeff)
+	newcoeff = minus_minpoly(an.coeffs)
 	newnum = -an.apprx
 	return AlgebraicNumber{inttype(an),floattype(an)}(newcoeff, newnum, an.prec)
 end
@@ -236,7 +226,7 @@ end
 /(an1::AlgebraicNumber,an2::AlgebraicNumber) = an1 * (inv(an2))
 
 # the complex conjugate of an algebraic number has the same minimal polynomial
-conj(an::AlgebraicNumber) = AlgebraicNumber(an.coeff, conj(an.apprx), an.prec)
+conj(an::AlgebraicNumber) = AlgebraicNumber(an.coeffs, conj(an.apprx), an.prec)
 abs(an::AlgebraicNumber) = sqrt(an * conj(an))
 
 # zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber{T,F}(T[0, 1], Complex{F}(0.0), F(Inf))
@@ -256,8 +246,6 @@ imag(an::AlgebraicNumber{T,F}) where {T,F} = (an - conj(an)) * inv(AlgebraicNumb
 function alg_roots(coeff::Vector{Integer})
 	# TODO
 end
-
-confirm_algnumber(b) = sum(b.coeff .* (b.apprx.^(0:degree(b.coeff))))
 
 # compute exp(pi*i*a),
 # which is algebraic if a is rational.

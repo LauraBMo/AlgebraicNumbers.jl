@@ -14,13 +14,10 @@ promote_rule(::Type{ExactNumber{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: I
 premote_rule(::Type{AlgebraicNumber{T,F}}, ::Type{AlgebraicNumber{S,G}}) where {T,S,F,G} =
 	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
 
-isrational(an::AlgebraicNumber) = degree(an.coeff) == 1
-isinteger(an::AlgebraicNumber) = isrational(an) && abs(an.coeff[2]) == 1
-
 # conversions back
 function convert(::Type{T}, an::AlgebraicNumber) where {T <: Integer}
 	if isinteger(an)
-		return convert(T, -prod(an.coeff))
+		return convert(T, -prod(an.coeffs))
 	else
 		throw(InexactError())
 	end
