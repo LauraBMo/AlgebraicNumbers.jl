@@ -238,8 +238,8 @@ one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(one(T), F)
 one(::Type{AlgebraicNumber}) = one(AlgebraicNumber{BigInt,BigFloat})
 one(x::AlgebraicNumber) = one(typeof(x))
 
-real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2), floattype(an)))
-imag(an::AlgebraicNumber{T,F}) where {T,F} = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * im))
+real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2)))
+imag(an::AlgebraicNumber) = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * im))
 
 # take roots of a polynomial,
 # and return them as algebraic numbers
@@ -258,5 +258,6 @@ function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: Ab
 	return AlgebraicNumber(p, apprx, F)
 end
 
-cos_alg(a::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} = real(exp_alg(a, F), F)
-sin_alg(a::Rational, ::Type{F}=BigFloat) where {F <: AbstractFloat} = imag(exp_alg(a, F), F)
+
+cos_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} = real(exp_alg(a, F))
+sin_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} = imag(exp_alg(a, F))

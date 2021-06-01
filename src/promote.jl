@@ -2,15 +2,29 @@
 import Base.convert
 import Base.promote_rule
 
-ExactNumber{T} = Union{T,Rational{T},Complex{T},Complex{Rational{T}}}
-
 # Algebraic number from integer
-convert(::Type{AlgebraicNumber{T,F}}, x::ExactNumber{S}) where {S <: Integer,T,F} =
-	AlgebraicNumber(promote_type(T, typeof(x))(x), F)
+convert(::Type{AlgebraicNumber{T,F}}, x::S) where {S <: Integer,T,F} =
+	AlgebraicNumber(promote_type(T, S)(x), F)
+convert(::Type{AlgebraicNumber{T,F}}, x::Rational{S}) where {S <: Integer,T,F} =
+	AlgebraicNumber(Rational{promote_type(T, S)}(x), F)
+convert(::Type{AlgebraicNumber{T,F}}, x::Complex{S}) where {S <: Integer,T,F} =
+	AlgebraicNumber(Complex{promote_type(T, S)}(x), F)
+convert(::Type{AlgebraicNumber{T,F}}, x::Complex{Rational{S}}) where {S <: Integer,T,F} =
+	AlgebraicNumber(Complex{Rational{promote_type(T, S)}}(x), F)
 
-# promotions
-promote_rule(::Type{ExactNumber{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
+# promotions form Julia types to AlgebraciNumber
+promote_rule(::Type{T}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
 	AlgebraicNumber{promote_type(T, S),F}
+promote_rule(::Type{Rational{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
+	AlgebraicNumber{promote_type(T, S),F}
+promote_rule(::Type{Complex{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
+	AlgebraicNumber{promote_type(T, S),F}
+promote_rule(::Type{Complex{Rational{T}}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
+	AlgebraicNumber{promote_type(T, S),F}
+premote_rule(::Type{AlgebraicNumber{T,F}},::Type{AlgebraicNumber{S,G}}) where {T,S <: Integer,F,G <: AbstractFloat} =
+	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
+
+# promotion between AlgebraicNumbers
 premote_rule(::Type{AlgebraicNumber{T,F}}, ::Type{AlgebraicNumber{S,G}}) where {T,S,F,G} =
 	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
 
