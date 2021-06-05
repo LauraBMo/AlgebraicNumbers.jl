@@ -12,25 +12,6 @@ import Base.sqrt,Base.cbrt
 
 # see: http://nemocas.org/nemo-0.4.pdf
 
-# An algebraic number,
-# consisting of the minimal polynomial of the number,
-# an arbitrary-precision approximation of the number,
-# and prec which specifies the minimal distance between roots of p
-# TODO: apprx has to be complex.
-"""
-		AlgebraicNumber{T}
-
-An algebraic number consisting of
-   - the minimal polynomial of the number: Vector of integers.
-   - Complex float point aproximation
-   - minimal distance between two roots of minimal polynomial
-"""
-struct AlgebraicNumber{T <: Integer,F <: AbstractFloat} <: Number
-	coeffs::Vector{T}
-	apprx::Complex{F}
-	prec::F
-end
-
 floattype(an::AlgebraicNumber{T,F}) where {T,F} = F
 complextype(an::AlgebraicNumber{T,F}) where {T,F} = Complex{F}
 inttype(an::AlgebraicNumber{T,F}) where {T,F} = T
@@ -98,19 +79,9 @@ function AlgebraicNumber(x::Complex{Rational{T}}, ::Type{F}=BigFloat) where {T <
 	end
 end
 
-Base.hash(an::AlgebraicNumber, h::UInt) = hash((an.coeffs, an.apprx), h)
-
-# TODO: only show up to precision
-function show(io::IO, an::AlgebraicNumber)
-	print(io, "≈")
-	# ndigits = max(10, round(Int,ceil(convert(Float64,log(an.prec)/log(10)))))
-	show(io, convert(Complex{Float64}, an.apprx))
-	# print(io,"...")
-end
-
 # get_coeffs(p::Nemo.fmpz_poly) = pointer_to_array(convert(Ptr{Int64}, p.coeffs), (p.length,))
-get_coeffs(p::Nemo.fmpz_poly, ::Type{T}=BigInt) where {T <: Integer}  = T.(Nemo.coeffs(p))
-prec_roots(a::Vector) = unique(PolynomialRoots.roots(BigFloat.(a)))
+get_coeffs(p::PolyElem, ::Type{T}=BigInt) where {T}  = T.(Nemo.coeffs(p))
+prec_roots(a::Vector) = unique(roots(BigFloat.(a)))
 prec_roots(a::PolyElem) = prec_roots(get_coeffs(a))
 # TODO: make sure roots returns distinct roots
 
@@ -156,8 +127,8 @@ function get_minpoly(poly::Vector, num)
 end
 
 function ==(an1::AlgebraicNumber, an2::AlgebraicNumber)
-	moniccoeffs(an1) == moniccoeffs(an2) || return false
-	return abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
+	return moniccoeffs(an1) == moniccoeffs(an2) &&
+		abs(an1.apprx - an2.apprx) < min(an1.prec, an2.prec)
 end
 
 inv(an::AlgebraicNumber) = AlgebraicNumber(reverse(an.coeffs), inv(an.apprx))
@@ -180,6 +151,8 @@ function root(an::AlgebraicNumber, n::Int)
 	return AlgebraicNumber(interleavezeros(an.coeffs, n - 1), an.apprx^(1 / n))
 end
 
+root(n::Int) = (an::AlgebraicNumber) -> root(an, n)
+
 sqrt(an::AlgebraicNumber) = root(an, 2)
 cbrt(an::AlgebraicNumber) = root(an, 3)
 
@@ -199,9 +172,9 @@ end
 
 # multiplication
 function *(an1::AlgebraicNumber, an2::AlgebraicNumber)
-	if an1 == zero(an1) || an2 == zero(an2)
+	if an1 == 0 || an2 == 0
 		# TODO: don't handle this explicitly
-		return zero(promote_type(typeof(an1), typeof(an2)))
+		return zero(promote(an1, an2)[1])
 	end
 	# check if p==q, if then use a more optimized and correct routine
 	# if an1.coeff == an2.coeff
@@ -232,14 +205,14 @@ abs(an::AlgebraicNumber) = sqrt(an * conj(an))
 # zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber{T,F}(T[0, 1], Complex{F}(0.0), F(Inf))
 zero(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(zero(T), F)
 zero(::Type{AlgebraicNumber}) = zero(AlgebraicNumber{BigInt,BigFloat})
-zero(x::AlgebraicNumber) = zero(typeof(x))
+# zero(x::AlgebraicNumber) = zero(typeof(x))
 
 one(::Type{AlgebraicNumber{T,F}}) where {T,F} = AlgebraicNumber(one(T), F)
 one(::Type{AlgebraicNumber}) = one(AlgebraicNumber{BigInt,BigFloat})
-one(x::AlgebraicNumber) = one(typeof(x))
+# one(x::AlgebraicNumber) = one(typeof(x))
 
 real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2)))
-imag(an::AlgebraicNumber) = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * im))
+imag(an::AlgebraicNumber) = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * Complex{inttype(a)}(0,1)))
 
 # take roots of a polynomial,
 # and return them as algebraic numbers
@@ -258,6 +231,10 @@ function exp_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: Ab
 	return AlgebraicNumber(p, apprx, F)
 end
 
+exp_alg(an::AlgebraicNumber) = exp_alg(convert(Rational, an), floattype(an))
 
 cos_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} = real(exp_alg(a, F))
 sin_alg(a::Rational{T}, ::Type{F}=BigFloat) where {T <: Integer,F <: AbstractFloat} = imag(exp_alg(a, F))
+
+cos_alg(an::AlgebraicNumber) = cos_alg(convert(Rational, an), floattype(an))
+sin_alg(an::AlgebraicNumber) = sin_alg(convert(Rational, an), floattype(an))

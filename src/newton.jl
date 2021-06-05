@@ -82,22 +82,46 @@ function composed_product(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	return convert_intcoeffs(T, pq)
 end
 
+composed_product(p,q) = composed_product(promote(p, q)...)
+
 # composed sum of two polynomials, given as coeffs p and q
 function composed_sum(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	# compute newton series
-	n = degree(p) * degree(q) + 1
+	using Nemo
+    p = BigInt[80,0,0,70]
+	q = BigInt[-80,0,0,70]
+	n = AlgebraicNumbers.degree(p) * AlgebraicNumbers.degree(q) + 1
 	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
-	a = poly_to_newton(p, n, R, x)
-	b = poly_to_newton(q, n, R, x)
+	a = AlgebraicNumbers.poly_to_newton(p, n, R, x)
+	b = AlgebraicNumbers.poly_to_newton(q, n, R, x)
 
 	# exp series
 	ee  = R([1 // factorial(BigInt(i)) for i = 0:n])
 	eei = R([factorial(BigInt(i)) for i = 0:n])
 
 	# multiply newton series and invert
-	m = mullow(R(Hadamard(a, ee)), R(Hadamard(b, ee)), n + 1)
-	pq = newton_to_poly(Hadamard(m, eei))
-
+	m = mullow(R(AlgebraicNumbers.Hadamard(a, ee)), R(AlgebraicNumbers.Hadamard(b, ee)), n + 1)
+	pq = AlgebraicNumbers.newton_to_poly(AlgebraicNumbers.Hadamard(m, eei))
+	AlgebraicNumbers.convert_intcoeffs(pq)
 	# convert to integer and return
 	return convert_intcoeffs(T, pq)
 end
+
+AlgebraicNumbers.composed_sum([80,0,0,70], [-80,0,0,70])
+composed_sum(p,q) = composed_sum(promote(p, q)...)
+
+	n = (length(p) - 1) * (length(q) - 1) + 1
+	R, x = Nemo.PolynomialRing(Nemo.FlintQQ, "x")
+	a = to_newton(p, n, R, x)
+	b = to_newton(q, n, R, x)
+
+	# exp series
+	ee  = R([Nemo.FlintQQ(1 // factorial(BigInt(i))) for i = 0:n])
+	eei = R([Nemo.FlintQQ(factorial(BigInt(i))) for i = 0:n])
+
+	# multiply newton series and invert
+	m = mullow(hadm(a, ee, R), hadm(b, ee, R), n + 1)
+	pq = from_newton(to_array(hadm(m, eei, R)))
+
+	# convert to integer and return
+	return map(numerator, pq * lcm(map(denominator, pq)))

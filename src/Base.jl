@@ -1,8 +1,10 @@
 
 
-# derivative of polynomial
+# Degree of a polynomial as a vector of coefficients
 degree(coeffs::Vector) = length(coeffs) - 1
 degree(an::AlgebraicNumber) = degree(an.coeffs)
+
+# derivative of polynomial
 derivative(coeffs::Vector) = coeffs[2:end] .* (1:degree(coeffs))
 
 # get monicoeffs for minpoly from an an
@@ -29,3 +31,31 @@ iswelldefined(an::AlgebraicNumber) = iswelldefined(an.coeffs, an.apprx, an.prec)
 
 isrational(an::AlgebraicNumber) = degree(an) == 1
 isinteger(an::AlgebraicNumber) = isrational(an) && ismonic(an)
+
+function isdiscriminantsquare(an::AlgebraicNumber)
+	Δ = Nemo.discriminant(an)
+	return issquare(Δ) || issquare(-Δ)
+end
+
+iscomplexratioanl(an::AlgebraicNumber) = degree(an) == 2 && isdiscriminantsquare(an::AlgebraicNumber)
+iscomplexinteger(an::AlgebraicNumber) = isratcomplex(an) && ismonic(an)
+
+function rootscomplexrational(an::AlgebraicNumber)
+	mcoeffs = moniccoeffs(an)
+end
+
+sqrtdiscriminant(an::AlgebraicNumber) = inttype(an)(isqrt(-Nemo.discriminant(an)))
+
+# ±(a,b) = (a + b, a - b)
+# rootsdeg2(an::AlgebraicNumber) = (-an.coeffs[2] ± sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
+
+function exactdeg2(an::AlgebraicNumber)
+	if im(an.apprx) > 0
+		num = (-an.coeffs[2] + sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
+	else
+		num = (-an.coeffs[2] - sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
+	end
+	return num
+end
+
+# AlgebraicNumbers.solvedeg2(x)

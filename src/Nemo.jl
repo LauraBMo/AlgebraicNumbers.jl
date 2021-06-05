@@ -27,3 +27,6 @@ function poly_product_from_coeff(coeffs1, coeffs2)
 	R, x = PolynomialRing(Nemo.FlintZZ, "x")
 	return get_coeffs(R(coeffs1) * R(coeffs2), promote_type(eltype(coeffs1), eltype(coeffs2)))
 end
+
+discriminant_from_coeff(coeffs) = Nemo.discriminant(Nemo.polynomial(Nemo.FlintZZ, coeffs))
+Nemo.discriminant(an::AlgebraicNumber) = discriminant_from_coeff(an.coeffs)
