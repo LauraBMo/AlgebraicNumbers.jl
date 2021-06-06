@@ -212,7 +212,7 @@ one(::Type{AlgebraicNumber}) = one(AlgebraicNumber{BigInt,BigFloat})
 # one(x::AlgebraicNumber) = one(typeof(x))
 
 real(an::AlgebraicNumber) = (an + conj(an)) * inv(AlgebraicNumber(inttype(an)(2)))
-imag(an::AlgebraicNumber) = (an - conj(an)) * inv(AlgebraicNumber(inttype(an)(2) * Complex{inttype(an)}(0,1)))
+imag(an::AlgebraicNumber) = (an - conj(an)) * inv(AlgebraicNumber(Complex{inttype(an)}(0,2)))
 
 # take roots of a polynomial,
 # and return them as algebraic numbers
