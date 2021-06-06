@@ -24,12 +24,12 @@ promote_rule(::Type{Complex{T}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integ
 promote_rule(::Type{Complex{Rational{T}}}, ::Type{AlgebraicNumber{S,F}}) where {T <: Integer,S,F} =
 	AlgebraicNumber{promote_type(T, S),F}
 
-premote_rule(::Type{AlgebraicNumber{T,F}},::Type{AlgebraicNumber{S,G}}) where {T,S <: Integer,F,G <: AbstractFloat} =
-	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
-
 # promotion between AlgebraicNumbers
-premote_rule(::Type{AlgebraicNumber{T,F}}, ::Type{AlgebraicNumber{S,G}}) where {T,S,F,G} =
-	AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
+# TODO: it does not work right now
+# premote_rule(::Type{AlgebraicNumber{S,F}}, ::Type{AlgebraicNumber{T,G}}) where {T,F,S,G} =
+# 				 AlgebraicNumber{promote_type(T, S),promote_type(F, G)}
+# MWE:
+# promote(AlgebraicNumber(BigInt(2)), AlgebraicNumber(2))
 
 # conversions back
 function convert(::Type{T}, an::AlgebraicNumber) where {T <: Integer}
