@@ -84,6 +84,9 @@ function Hadamard(p, q)
 	return Rational{BigInt}[cp * cq for (cp, cq) in zip(Nemo.coeffs(p), Nemo.coeffs(q))]
 end
 
+Hadamard_exp(p) = [Rational(c) // factorial(big(i - 1)) for (i, c) in enumerate(Nemo.coeffs(p))]
+Hadamard_invexp(p) = [Rational(c) * factorial(big(i - 1)) for (i, c) in enumerate(Nemo.coeffs(p))]
+
 # composed product of two polynomials, given as coeffs p and q
 function composed_product(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	# compute newton series
@@ -109,13 +112,9 @@ function composed_sum(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	a = poly_to_newton(p, n, R, x)
 	b = poly_to_newton(q, n, R, x)
 
-	# exp series
-	ee  = R([1 // factorial(BigInt(i)) for i = 0:n])
-	eei = R([factorial(BigInt(i)) for i = 0:n])
-
 	# multiply newton series and invert
-	m = mullow(R(Hadamard(a, ee)), R(Hadamard(b, ee)), n + 1)
-	pq = newton_to_poly(Hadamard(m, eei), n)
+	m = mullow(R(Hadamard_exp(a)), R(Hadamard_exp(b)), n + 1)
+	pq = newton_to_poly(Hadamard_invexp(m), n)
 	# convert to integer and return
 	return convert_intcoeffs(T, pq)
 end
