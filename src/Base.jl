@@ -38,11 +38,11 @@ function isdiscriminantsquare(an::AlgebraicNumber)
 end
 
 iscomplexratioanl(an::AlgebraicNumber) = degree(an) == 2 && isdiscriminantsquare(an::AlgebraicNumber)
-iscomplexinteger(an::AlgebraicNumber) = isratcomplex(an) && ismonic(an)
+iscomplexinteger(an::AlgebraicNumber) = iscomplexratioanl(an) && ismonic(an)
 
-function rootscomplexrational(an::AlgebraicNumber)
-	mcoeffs = moniccoeffs(an)
-end
+# function rootscomplexrational(an::AlgebraicNumber)
+# 	mcoeffs = moniccoeffs(an)
+# end
 
 sqrtdiscriminant(an::AlgebraicNumber) = inttype(an)(isqrt(-Nemo.discriminant(an)))
 
@@ -50,12 +50,10 @@ sqrtdiscriminant(an::AlgebraicNumber) = inttype(an)(isqrt(-Nemo.discriminant(an)
 # rootsdeg2(an::AlgebraicNumber) = (-an.coeffs[2] ± sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
 
 function exactdeg2(an::AlgebraicNumber)
-	if im(an.apprx) > 0
-		num = (-an.coeffs[2] + sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
+	if imag(an.apprx) > 0
+		num = (-an.coeffs[2] + sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) // (2 * an.coeffs[3])
 	else
-		num = (-an.coeffs[2] - sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) .// 2
+		num = (-an.coeffs[2] - sqrtdiscriminant(an) * Complex{inttype(an)}(0, 1)) // (2 * an.coeffs[3])
 	end
 	return num
 end
-
-# AlgebraicNumbers.solvedeg2(x)
