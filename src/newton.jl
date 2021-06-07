@@ -23,7 +23,7 @@ function poly_to_newton(coeffs::Vector{T}, N, R, x) where {T <: Integer}
 	B = R(reverse(mcoeffs))
 
 	b0 = R(polyinv(reverse(mcoeffs), D))
-	c  = truncate(A * b0, D)
+	c  = mullow(A, b0, D)
 
 	r = R()
 	x_power = R(1)
