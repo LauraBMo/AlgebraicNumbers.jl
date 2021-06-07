@@ -151,7 +151,22 @@ end
 @testset "More products" begin
     N = randint(init=1)
     M = randint(init=1)
-@test all(sqrt.(AlgebraicNumber.(N)) .* sqrt.(AlgebraicNumber.(M)) == sqrt.(AlgebraicNumber.(N .* M)))
+    @test all(sqrt.(AlgebraicNumber.(N)) .* sqrt.(AlgebraicNumber.(M)) == sqrt.(AlgebraicNumber.(N .* M)))
+    @test all(cbrt.(AlgebraicNumber.(N)) .* cbrt.(AlgebraicNumber.(M)) == cbrt.(AlgebraicNumber.(N .* M)))
 end
+
+@testset "Convert back" begin
+    @test convert(Int, AlgebraicNumber(2)) == 2
+    @test convert(BigInt, AlgebraicNumber(2)) == BigInt(2)
+    @test convert(Rational{Int}, AlgebraicNumber(2 // 3)) == 2 // 3
+    @test convert(Rational{BigInt}, AlgebraicNumber(2 // 3)) == BigInt(2) // 3
+    @test convert(Complex{Int}, AlgebraicNumber(2 + im)) == 2 + im
+    @test convert(Complex{BigInt}, AlgebraicNumber(2 + im)) == BigInt(2) + im
+    @test convert(Complex, AlgebraicNumber(2 + im)) == 2 + im
+    x = 2 // 3 + im
+    @test convert(Complex{Rational{Int}}, AlgebraicNumber(x)) == x
+    @test convert(Complex, AlgebraicNumber(x)) == x
+end
+
 
 # TODO: add some more tests
