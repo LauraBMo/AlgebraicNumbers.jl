@@ -43,22 +43,14 @@ end
 # tr: traces i.e. newton series
 # This algorithm is based on the Leverrier-Faddeev algorithm
 # see: http://math.stackexchange.com/questions/405822/what-is-the-fastest-way-to-find-the-characteristic-polynomial-of-a-matrix
-#
-# function newton_to_poly(tr::Vector{T}) where {T <: Number}
-# 	# special case
-# 	out = T[0,1]
-# 	if tr != [1]
-# 		n = length(tr)
-# 		c = Vector{T}(undef, n)
-# 		c[end] = one(T)
-# 		for k = 1:n - 1
-# 			next_c = -sum(tr[2:(k + 1)] .* c[(end - k + 1):end]) // k
-# 			c[end - k] = next_c
-# 		end
-# 		out = c
+# using LinearAlgebra: dot
+# function from_newton{T}(tr::Vector{T})
+# 	c = T[]
+# 	for k = 1 : length(tr)-1
+# 		push!(c, -dot(tr[2:(k+1)], vcat(reverse(c),1))/k)
 # 	end
-# 	return out
-# end
+# 	return vcat(reverse(c),1)
+# end 
 
 function newton_to_poly(N::Vector{T}, D=length(N)) where {T <: Number}
 	# special case
