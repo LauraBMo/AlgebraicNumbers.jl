@@ -35,7 +35,7 @@ function poly_to_newton(coeffs::Vector{T}, N, R, x) where {T <: Integer}
 		x_power *= x_d
 		c = step(c)
 	end
-	return r
+	return Rational.(Nemo.coeffs(r))
 end
 
 # to_array(p) = Rational{BigInt}[Rational(coeff(p, i)) for i = 0:Nemo.degree(p)]
@@ -84,7 +84,10 @@ function Hadamard(p, q)
 	return Rational{BigInt}[cp * cq for (cp, cq) in zip(Nemo.coeffs(p), Nemo.coeffs(q))]
 end
 
-Hadamard_exp(p) = [Rational(c) // factorial(big(i - 1)) for (i, c) in enumerate(Nemo.coeffs(p))]
+Hadamard_exp(v) = v.*(1 .// factorial.(big.(0:degree(v))))
+# Hadamard_invexp(v) =v.*(factorial.(big.(0:degree(v))))
+
+# Hadamard_exp(p) = [Rational(c) // factorial(big(i - 1)) for (i, c) in enumerate(Nemo.coeffs(p))]
 Hadamard_invexp(p) = [Rational(c) * factorial(big(i - 1)) for (i, c) in enumerate(Nemo.coeffs(p))]
 
 # composed product of two polynomials, given as coeffs p and q
@@ -96,7 +99,7 @@ function composed_product(p::Vector{T}, q::Vector{T}) where {T <: Integer}
 	b = poly_to_newton(q, n, R, x)
 
 	# multiply newton series and invert
-	pq = newton_to_poly(Hadamard(a, b), n)
+	pq = newton_to_poly(prod.(zip(a,b)), n)
 
 	# convert to integer and return
 	return convert_intcoeffs(T, pq)
