@@ -124,7 +124,10 @@ end
 @testset "Real and Imag" begin
     alg_im = sqrt(AlgebraicNumber(BigInt(-1)))
     N, K, roots = randroots()
-    @test all(real.(roots) .+ alg_im * imag.(roots) == roots)
+    for root in roots
+        print("$(root)\n")
+        @test real.(roots) .+ alg_im * imag.(roots) == roots
+    end
 end
 
 @testset "Sin and Cos" begin
@@ -141,7 +144,6 @@ end
     @test all(sqrt.(pow2N) .== N)
     end
 
-# TODO: Define takebuf_array
 @testset "Show" begin
     io = IOBuffer()
     show(io, sqrt(AlgebraicNumber(-1)) + 1)
