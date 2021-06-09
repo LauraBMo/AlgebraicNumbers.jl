@@ -142,11 +142,12 @@ end
     end
 
 # TODO: Define takebuf_array
-# @testset "Show" begin
-#     a = IOBuffer()
-#     show(a, sqrt(AlgebraicNumber(-1)) + 1)
-#     @test convert(UTF8String, takebuf_array(a)) == "≈1.0 + 1.0im"
-    # end
+@testset "Show" begin
+    io = IOBuffer()
+    show(io, sqrt(AlgebraicNumber(-1)) + 1)
+    @test String(take!(io)) == "≈1.0 + 1.0im"
+    close(io)
+end
 
 @testset "More products" begin
     N = randint(init=1)
