@@ -23,7 +23,7 @@ end
     N = randrat()
     algN = AlgebraicNumber.(N)
     @test all(abs.(AlgebraicNumbers.confirm_algnumber.(algN)) .< 1e-20)
-    @test all(algN .== promote(algN, N)[2])
+    @test all(algN .== N)
     intN = [convert(Rational, n) for n in N]
     @test all(intN .== N)
 end
@@ -44,6 +44,13 @@ end
     @test all(algN .== N)
     intN = [convert(Complex, n) for n in N]
     @test all(intN .== N)
+end
+
+@testset "Promote type" begin
+    @test promote_type(BigInt, AlgebraicNumber{Int,BigFloat}) == AlgebraicNumber{BigInt,BigFloat}
+    @test promote_type(Rational{BigInt}, AlgebraicNumber{Int,BigFloat}) == AlgebraicNumber{BigInt,BigFloat}
+    @test promote_type(Complex{BigInt}, AlgebraicNumber{Int,BigFloat}) == AlgebraicNumber{BigInt,BigFloat}
+    @test promote_type(Complex{Rational{BigInt}}, AlgebraicNumber{Int,BigFloat}) == AlgebraicNumber{BigInt,BigFloat}
 end
 
 @testset "Square root" begin
