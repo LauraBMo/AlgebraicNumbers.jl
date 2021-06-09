@@ -23,7 +23,7 @@ end
     N = randrat()
     algN = AlgebraicNumber.(N)
     @test all(abs.(AlgebraicNumbers.confirm_algnumber.(algN)) .< 1e-20)
-    @test all(algN .== N)
+    @test all(algN .== promote(algN, N)[2])
     intN = [convert(Rational, n) for n in N]
     @test all(intN .== N)
 end
