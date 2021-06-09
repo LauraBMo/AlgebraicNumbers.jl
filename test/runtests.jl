@@ -125,7 +125,7 @@ end
     alg_im = sqrt(AlgebraicNumber(BigInt(-1)))
     N, K, roots = randroots()
     for root in roots
-        print("$(root)\n")
+        print("$(root.coeffs)\n")
         @test real.(roots) .+ alg_im * imag.(roots) == roots
     end
 end
