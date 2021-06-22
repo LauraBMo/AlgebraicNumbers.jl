@@ -73,12 +73,16 @@ function convert(::Type{Complex{T}}, an::AlgebraicNumber) where {T <: IntOrRat}
             # If iscomplexinteger, eactdeg2 will return numbers convertibles to int.
             exactdeg2(integertype(T), an) :
             throw(InexactError(:convert, T, an))
-    end
+        end
 end
 
 function convert(::Type{Complex}, an::AlgebraicNumber)
     if isrational(an)
-        return convert(Complex{BigInt}, convert(BigInt, an))
+        if isinteger(an)
+            return convert(Complex{BigInt}, convert(BigInt, an))
+        else
+            return convert(Complex{Rational{BigInt}}, convert(Rational, an))
+        end
     else
         if iscomplexinteger(an)
             return convert(Complex{BigInt}, an)
