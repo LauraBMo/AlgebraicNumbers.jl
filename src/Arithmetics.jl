@@ -112,11 +112,11 @@ zero(x::AlgebraicNumber) = AlgebraicNumber([0, 1], 0)
 one(::Type{AlgebraicNumber}) = AlgebraicNumber([-1, 1], 1)
 one(x::AlgebraicNumber) =  AlgebraicNumber([-1, 1], 1)
 
+# TODO
 # take roots of a polynomial,
 # and return them as algebraic numbers
-function alg_roots(coeff::Vector{Integer})
-	# TODO
-end
+# function alg_roots(coeff::Vector{Integer})
+# end
 
 # compute exp(pi*i*a),
 # which is algebraic if a is rational.
