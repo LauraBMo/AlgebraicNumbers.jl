@@ -13,13 +13,13 @@ end
 
 getvector(v::RatVec) = v.vec
 
-Base.length(v::RatVec) = Base.length(getvector(v))
-Base.size(v::RatVec) = Base.size(getvector(v))
+# Base.length(v::RatVec) = Base.length(getvector(v))
+# Base.size(v::RatVec) = Base.size(getvector(v))
 
-Base.eltype(v::RatVec{T}) where T = T
+# Base.eltype(v::RatVec{T}) where T = T
 
-Base.IndexStyle(::Type{<:RatVec}) = Base.IndexLinear()
-Base.getindex(v::RatVec, i::Int) = Base.getindex(getvector(v), i)
+# Base.IndexStyle(::Type{<:RatVec}) = Base.IndexLinear()
+# Base.getindex(v::RatVec, i::Int) = Base.getindex(getvector(v), i)
 
 Base.convert(::Type{Vector{T}}, v::RatVec{S}) where {T,S} =
     T.(lcm(denominator.(getvector(v))) .* getvector(v))

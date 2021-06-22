@@ -43,8 +43,8 @@ function root(an::AlgebraicNumber, n::Int)
 	end
 end
 
-root(an::AlgebraicNumber, n) = root(an, Int(n))
-root(n::Int) = (an::AlgebraicNumber) -> root(an, n)
+root(an, n) = root(AlgebraicNumber(an), Int(n))
+
 
 sqrt(an::AlgebraicNumber) = root(an, 2)
 cbrt(an::AlgebraicNumber) = root(an, 3)

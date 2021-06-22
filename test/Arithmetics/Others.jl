@@ -13,7 +13,8 @@ end
     n = sqrt(AlgebraicNumber(9 * 5)) - sqrt(AlgebraicNumber(4 * 7)) + sqrt(AlgebraicNumber(35))
     d = 1 - sqrt(AlgebraicNumber(5)) + sqrt(AlgebraicNumber(7))
     α = n / d
-    @test α.minpoly == [3596, 2312, -280, -156, 19]
+    @test AlgebraicNumbers.getminpoly(α) == [3596, 2312, -280, -156, 19]
+    @test Arblib.overlaps(AlgebraicNumbers.getapprox(α), α.approx)
 end
 
 @testset "Absolute val" begin
@@ -21,7 +22,7 @@ end
     @test conj(alg_im) == -alg_im
     @test abs(alg_im) == 1
     for n in randrat()
-        @test abs(AlgebraicNumber(n)) == abs(n)
+    @test abs(AlgebraicNumber(n)) == abs(n)
     end
 end
 
